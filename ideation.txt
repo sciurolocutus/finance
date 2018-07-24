@@ -1,0 +1,84 @@
+Basic resources:
+
+For the purposes of this app, we will pretend we care only about a single user.
+Otherwise, we'd want to have a whole other layer of /users/{userId}/ or something of the like as an additional top level prefix to all these resources.
+And that's just not something I'm going to consider in scope for now.
+For now, "it's easy enough" to set up a separate instance.
+
+Another way that this implementation of this app will fall short is that budget is done by category statically across all months, whereas in a "real" version,
+ you'd want to have some sort of templating method, but allow each month's budget to be separate, thus implying, e.g. /budgetTemplates and /budgets
+ However, I will eschew that as well, as that *definitely* won't fit into 6 hours.
+
+/categories
+	- GET
+		paths: /categories, /categories/{categoryId}
+		response status codes: 200, 404
+		response body (200) (single category): {"id": 1, "name": "Bills, bills, bills", "monthlyBudget": 203.21}
+		response body (404): {"message": "category not found"}
+		Alternative option: paths: /categories, /categories/{categoryName}
+	- POST
+		request body: {"name": "Bills, bills, bills", "monthlyBudget": 203.21}
+		response status code: 201
+		response body: {"message": "success"}
+	- PUT
+		Required body params: name, monthlyBudget
+	- DELETE
+		EITHER
+			ON DELETE CASCADE (delete transactions that refer to this category)
+		OR
+			throw validation error if targeted category is still referred to by transactions
+/transactions
+	- GET
+		paths: /transactions, /transactions/{transactionId}, /transactions?startDate=YYYY-mm-dd&endDate=YYYY-mm-dd&categoryName=Bills
+		response body (200) (/transactions/{transactionId}): {"id": 1, "categoryId": 1, "categoryName": "Bills, bills, bills", "transactionDate": "2018-04-01", "description": "AWS usage", "amount": 23.31}
+		response body (200) (/transactions(?params)): [ a list of these ]
+	- PUT
+		path: /transactions/{transactionId}
+		required body params: categoryId, transactionDate, amount (description defaulted to "", categoryName is derived)
+	- POST
+		path: /transactions
+		required body params: categoryId, transactionDate, amount (description defaulted to "", categoryName is derived)
+	- DELETE
+		path: /transactions/{transactionId}
+		[nothing special here; does as expected, no need for cascading behavior]
+
+
+User stories / business requirement mapping:
+
+"As a user, I want a way to budget by categories and know when I'm over budget."
+	- Budgeting by categories is taken care of by the /categories resource and the fact that each transaction ties to a category.
+	- The "over-budget" functionality may be implemented by the frontend, by checking a given category's monthlyBudget against the transactions under that category within the monthly timeframe.
+"As a user, I want to be able to manually manage (add, edit, delete) transactions."
+	- This is taken care of by the POST, PUT, and DELETE methods of the /transactions resource
+"As a user, I want to be able to view a spending summary for a specific time period."
+	- The data required for this is provided by the startDate and endDate query params of the GET /transactions resource method.
+	- The visualization of this will be provided by a front end layer, e.g. using vue.js.
+
+One more user story needs to be defined and implemented. I will write it here.
+I think filter-by-categoryName may have already been extra, because I "thought it ought to be".
+With that in mind, I may write a new user story as:
+"As a user, I want to be able to filter my spending summary by categories in addition to by time period."
+	- The data required for this is provided by the categoryName query param of the GET /transactions resource method.
+	- The visualization of this will be provided by the front end layer, by clicking on a segment of the pie chart.
+
+Front-end ideas:
+I don't intend to focus most of my effort on the front end, as that's not what I'm most proficient in, but I do have a couple of basic ideas.
+* main dashboard view:
+	- date range selector, by default selecting the calendar month so far, from the first of the month to today
+	- list of transactions, within the date range, displaying date, description, and category
+	- Bar + line chart showing expenditure by category compared to budgeted expenditure
+	- pie chart showing expenditure by category (d3.js may be a good option here)
+		- hovertext: name of category / amount spent in selected timeframe
+	- click a category on the pie chart to filter down to just that category
+add transaction button (produces modal):
+	- fill out date (defaulted to today)
+	- select category from dropdown (bonus for a more polished app: "or enter a new one" -- that would warrant making the monthlyAmount optional, though, to accept updates later, as that's bordering on too much for the user to do while just entering a transaction)
+	- fill out description (or leave blank, if you're lazy)
+	- fill out amount (there's probably a decent input field type for this, also, that on mobile would show up like a spinner)
+	- cancel / save (in different colors/weights, so it's obvious they're different)
+	- esc cancels and exits (should it pop up a 'you sure?' if some text has been entered? this version won't bother)
+category entry modal:
+	- name
+	- monthlyBudget
+	- same save/cancel rules as the other modal
+
