@@ -25,6 +25,23 @@ class Category(Resource):
         else:
             return cat.json()
 
+    @jwt_required()
+    def put(self, categoryId):
+        data = Category.parser.parse_args()
+
+        cat = CategoryModel.find_by_id(categoryId)
+        if not cat:
+            return CATEGORY_NOT_FOUND, 404
+
+        category = CategoryModel(data['name'], data['monthlyBudget'])
+        category.id = categoryId
+
+        try:
+            category.update()
+        except:
+            return {'message': 'An error occurred updating the category'}, 500
+
+        return category.json()
 
 class CategoryList(Resource):
     def get(self):
@@ -54,20 +71,3 @@ class CategoryList(Resource):
 
         return category.json(), 201
 
-    @jwt_required()
-    def put(self, categoryId):
-        data = Category.parser.parse_args()
-
-        cat = CategoryModel.find_by_id(categoryId)
-        if not cat:
-            return CATEGORY_NOT_FOUND, 404
-
-        category = CategoryModel(data['name'], data['monthlyBudget'])
-        category.id = categoryId
-
-        try:
-            category.save_to_db()
-        except:
-            return {'message': 'An error occurred updating the category'}, 500
-
-        return category.json()

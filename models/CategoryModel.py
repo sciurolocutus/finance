@@ -32,6 +32,11 @@ class CategoryModel(db.Model):
         return resp
         #return cls.query.all()
 
+    def update(self):
+        db.session.query.filter_by(id=self.id)\
+                .update({'name': self.name, 'monthly_budget': self.monthlyBudget})
+        db.session.commit()
+
     def save_to_db(self):
         db.session.add(self)
         db.session.commit()
