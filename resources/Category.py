@@ -43,6 +43,13 @@ class Category(Resource):
 
         return category.json()
 
+    @jwt_required()
+    def delete(self, categoryId):
+        cat = CategoryModel.find_by_id(categoryId)
+        if not cat:
+            return CATEGORY_NOT_FOUND, 404
+        cat.delete_from_db()
+
 class CategoryList(Resource):
     def get(self):
         resp = {'categories': list(map(lambda cat: cat.json(), CategoryModel.find_all()))}

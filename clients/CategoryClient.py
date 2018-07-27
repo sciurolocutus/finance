@@ -19,6 +19,6 @@ class CategoryClient:
         headers={'Authorization': 'JWT ' + self.jwt}
         return requests.put("{0}/{1}".format(self.baseurl, categoryId), headers=headers, json=category)
 
-    def postCategory(self, categoryId, category):
+    def postCategory(self, category):
         headers={'Authorization': 'JWT ' + self.jwt}
         return requests.post("{0}".format(self.baseurl), headers=headers, json=category)
