@@ -2,7 +2,6 @@ from sqlalchemy.orm import relationship
 
 from db import db
 
-
 class CategoryModel(db.Model):
     __tablename__ = 'category'
 
@@ -25,16 +24,11 @@ class CategoryModel(db.Model):
     @classmethod
     def find_all(cls):
         resp = cls.query.all()
-        print('find all')
-        from pprint import pprint
-        pprint(resp)
-        print('done finding all')
         return resp
         #return cls.query.all()
 
     def update(self):
-        db.session.query.filter_by(id=self.id)\
-                .update({'name': self.name, 'monthly_budget': self.monthlyBudget})
+        db.session.query(CategoryModel).filter(CategoryModel.id==self.id).update({'name': self.name, 'monthlyBudget': self.monthlyBudget})
         db.session.commit()
 
     def save_to_db(self):

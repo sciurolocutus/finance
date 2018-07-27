@@ -45,24 +45,16 @@ class Category(Resource):
 
 class CategoryList(Resource):
     def get(self):
-        print('category list GET')
         resp = {'categories': list(map(lambda cat: cat.json(), CategoryModel.find_all()))}
-        from pprint import pprint
-        pprint(resp)
         if not resp['categories']:
             return CATEGORY_NOT_FOUND, 404
         return resp
 
     @jwt_required()
     def post(self):
-        print('POST /categories')
         data = Category.parser.parse_args()
-        print('POST /categories after parsing args')
 
         category = CategoryModel(data['name'], data['monthlyBudget'])
-
-        from pprint import pprint
-        pprint(category)
 
         try:
             category.save_to_db()
