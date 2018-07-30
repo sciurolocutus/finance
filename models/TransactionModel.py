@@ -5,6 +5,7 @@ from sqlalchemy.dialects.sqlite import DATETIME
 from sqlalchemy.orm import relationship
 
 from db import db
+from models.CategoryModel import CategoryModel
 
 
 class TransactionModel(db.Model):
@@ -16,6 +17,12 @@ class TransactionModel(db.Model):
     description = db.Column('description', db.String(32))
     amount = db.Column('amount', db.Numeric, nullable=False)
 
+    def __init__(self, param_dict):
+        self.categoryId = param_dict['categoryId']
+        self.transactionDate = param_dict['transactionDate']
+        self.description = param_dict['description']
+        self.amount = param_dict['amount']
+
     @classmethod
     def find_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
@@ -23,17 +30,33 @@ class TransactionModel(db.Model):
     @classmethod
     def find_by_params(cls, queryParams):
         query = cls.query
-        if 'startDate' in queryParams:
-            query = query.filter_by(transactionDate >= queryParams['startDate']
-        if 'endDate' in queryParams:
-            query = query.filter_by(transactionDate <= queryParams['endDate']
-        if 'categoryName' in queryParams:
+        if queryParams['startDate']:
+            query = query.filter(func.date(TransactionModel.transactionDate) >= func.date(queryParams['startDate']))
+        if queryParams['endDate']:
+            query = query.filter(func.date(TransactionModel.transactionDate) <= func.date(queryParams['endDate']))
+        if queryParams['categoryName']:
             cat = CategoryModel.find_by_name(queryParams['categoryName'])
             if cat:
-                query = query.filter_by(categoryId = cat.id)
+                query = query.filter(TransactionModel.categoryId == cat.id)
             else:
                 return []
-        return cls.query.filter_by(category=_id)
+        return query
+
+    @classmethod
+    def find_all(cls):
+        return cls.query.all()
+
+    def update(self):
+        db.session.query(TransactionModel).filter(TransactionModel.id == self.id) \
+            .update(
+            {
+                'categoryId': self.categoryId,
+                'transactionDate': self.transactionDate,
+                'description': self.description,
+                'amount': self.amount
+            }
+        )
+        db.session.commit()
 
     def save_to_db(self):
         db.session.add(self)
@@ -44,12 +67,19 @@ class TransactionModel(db.Model):
         db.session.commit()
 
     def json(self):
-        return {
+        resp = {
             'id': self.id,
             'categoryId': self.categoryId,
-            'categoryName': CategoryModel.find_by_id(self.categoryId) if self.categoryId else None,
-            'transactionDate': self.transactionDate.replace(microsecond=0).isoformat() if self.entry_start else datetime.now().replace(microsecond=0).isoformat(),
+            'transactionDate': self.transactionDate.replace(
+                microsecond=0).isoformat() if self.transactionDate else datetime.now().replace(
+                microsecond=0).isoformat(),
             'description': self.description,
-            'amount': "0:.2f".format(self.amount)
+            'amount': "{0:.2f}".format(float(self.amount))
         }
 
+        if self.categoryId:
+            cat = CategoryModel.find_by_id(self.categoryId)
+            if cat:
+                resp['categoryName'] = cat.name
+
+        return resp

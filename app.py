@@ -1,10 +1,11 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_restful import Api
 from flask_jwt import JWT
 
 from db import db
+from exceptions.ValidationException import ValidationException
 from resources.Category import Category, CategoryList
-#from resources.Transaction import Transaction, TransactionList
+from resources.Transaction import Transaction, TransactionList
 from resources.user import UserRegister
 from security import authenticate, identity
 
@@ -23,10 +24,16 @@ def create_tables():
 
 jwt = JWT(app, authenticate, identity)
 
+@app.errorhandler(ValidationException)
+def handle_validation_exception(error):
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
+
 api.add_resource(CategoryList, '/categories')
-api.add_resource(Category, '/categories/<int:categoryId>')
-#api.add_resource(TransactionList, '/transactions')
-#api.add_resource(Transaction, '/transactions/<int:transactionId>')
+api.add_resource(Category, '/categories/<int:category_id>')
+api.add_resource(TransactionList, '/transactions')
+api.add_resource(Transaction, '/transactions/<int:transaction_id>')
 api.add_resource(UserRegister, '/register')
 
 if __name__ == '__main__':

@@ -1,9 +1,16 @@
 import unittest
-import json
-from pprint import pprint
+from random import randint
 
 from clients.AuthClient import AuthClient
 from clients.CategoryClient import CategoryClient
+
+
+def make_new_category():
+    return {
+        'name': 'Fake category ' + randint(1, 4),
+        'monthlyBudget': "{0:.2f|".format(randint(30, 120) + 0.03)
+    }
+
 
 class CategoryTest(unittest.TestCase):
     def setUp(self):
@@ -21,77 +28,81 @@ class CategoryTest(unittest.TestCase):
     def test_get_all(self):
         resp = self.categoryClient.getCategories()
         resp.raise_for_status()
-        categoriesList = resp.json()
-        self.assertGreater(len(categoriesList), 0, msg='There is at least one category in the response')
+        categories_list = resp.json()
+        self.assertGreater(len(categories_list), 0, msg='There is at least one category in the response')
 
     def test_get_specific(self):
-        #grab one
+        # grab one
         resp = self.categoryClient.getCategories()
         resp.raise_for_status()
-        categoriesList = resp.json()['categories']
+        categories_list = resp.json()['categories']
 
-        myCat = categoriesList[0]
-        resp = self.categoryClient.getCategory(myCat['id'])
+        my_cat = categories_list[0]
+        resp = self.categoryClient.getCategory(my_cat['id'])
         resp.raise_for_status()
-        self.assertEqual(myCat, resp.json(), msg='The chosen category has the same content whether from the "all" request or re-requested by id')
+        self.assertEqual(my_cat, resp.json(),
+                         msg='The chosen category has the same content whether from the "all" request or re-requested by id')
 
     def test_put(self):
-        #grab one
+        # grab one
         resp = self.categoryClient.getCategories()
         resp.raise_for_status()
-        categoriesList = resp.json()['categories']
+        categories_list = resp.json()['categories']
 
-        myCat = categoriesList[0]
-        newCat = {'id': myCat['id'], 'monthlyBudget': str(float(myCat['monthlyBudget']) * 2), 'name': 'Foghorn Leg Horns'}
-        resp = self.categoryClient.putCategory(myCat['id'], newCat)
+        my_cat = categories_list[0]
+        new_cat = {'id': my_cat['id'], 'monthlyBudget': str(float(my_cat['monthlyBudget']) * 2),
+                   'name': 'Foghorn Leg Horns'}
+        resp = self.categoryClient.putCategory(my_cat['id'], new_cat)
         resp.raise_for_status()
 
-        resp = self.categoryClient.getCategory(myCat['id'])
+        resp = self.categoryClient.getCategory(my_cat['id'])
         resp.raise_for_status()
-        self.assertEqual(newCat, resp.json(), msg='The modified category has the content we put into it.')
+        self.assertEqual(new_cat, resp.json(), msg='The modified category has the content we put into it.')
 
-        #now put it back the way it was...
-        resp = self.categoryClient.putCategory(myCat['id'], myCat)
+        # now put it back the way it was...
+        resp = self.categoryClient.putCategory(my_cat['id'], my_cat)
         resp.raise_for_status()
 
-        resp = self.categoryClient.getCategory(myCat['id'])
+        resp = self.categoryClient.getCategory(my_cat['id'])
         resp.raise_for_status()
-        self.assertEqual(myCat, resp.json(), msg='The modified category was set back the way it was to begin with.')
+        self.assertEqual(my_cat, resp.json(), msg='The modified category was set back the way it was to begin with.')
 
     def test_post(self):
-        newCat = {'monthlyBudget': '123.32', 'name': 'Fake category 1'}
-        resp = self.categoryClient.postCategory(newCat)
+        new_category = {'monthlyBudget': '123.32', 'name': 'Fake category 1'}
+        resp = self.categoryClient.postCategory(new_category)
         resp.raise_for_status()
 
-        reflectedCat = resp.json()
+        reflected_category = resp.json()
 
-        resp = self.categoryClient.getCategory(reflectedCat['id'])
+        resp = self.categoryClient.getCategory(reflected_category['id'])
         self.assertLess(resp.status_code, 400, msg='The category just created is there when we ask for it.')
-        requestedCat = resp.json()
+        requested_category = resp.json()
 
-        self.categoriesToDelete.append(reflectedCat)
-        self.assertEqual(newCat['monthlyBudget'], reflectedCat['monthlyBudget'], msg='The reflected category has the same monthly budget as what we posted.')
-        self.assertEqual(newCat['name'], reflectedCat['name'], msg='The reflected category has the same name as what we posted.')
-        self.assertEqual(newCat['monthlyBudget'], requestedCat['monthlyBudget'], msg='The re-requested category has the same monthly budget as what we posted.')
-        self.assertEqual(newCat['name'], requestedCat['name'], msg='The re-requested category has the same name as what we posted.')
+        self.categoriesToDelete.append(reflected_category)
+
+        for prop in ['monthlyBudget', 'name']:
+            self.assertEqual(new_category[prop], reflected_category[prop],
+                             msg='The reflected category has the same ' + prop + ' as what we posted.')
+            self.assertEqual(new_category[prop], requested_category[prop],
+                             msg='The requested category has the same ' + prop + ' as what we posted.')
 
     def test_delete(self):
-        newCat = {'monthlyBudget': '123.32', 'name': 'Fake category 2'}
-        resp = self.categoryClient.postCategory(newCat)
+        new_category = {'monthlyBudget': '123.32', 'name': 'Fake category 2'}
+        resp = self.categoryClient.postCategory(new_category)
         resp.raise_for_status()
 
-        reflectedCat = resp.json()
-        catId = reflectedCat['id']
+        reflected_category = resp.json()
+        category_id = reflected_category['id']
 
-        resp = self.categoryClient.getCategory(catId)
+        resp = self.categoryClient.getCategory(category_id)
         self.assertEqual(resp.status_code, 200, msg='The category just created is there when we ask for it.')
 
-        catToDelete = resp.json()
-        resp = self.categoryClient.deleteCategory(catId)
+        resp = self.categoryClient.deleteCategory(category_id)
         self.assertEqual(resp.status_code, 200, msg='The delete claims to have succeeded.')
 
-        resp = self.categoryClient.getCategory(catId)
+        resp = self.categoryClient.getCategory(category_id)
         self.assertEqual(resp.status_code, 404, msg='The category just deleted should no longer exist.')
+
 
 if __name__ == 'main':
     unittest.main()

@@ -6,6 +6,7 @@ from models.CategoryModel import CategoryModel
 
 CATEGORY_NOT_FOUND = {'message': 'Category not found'}
 
+
 class Category(Resource):
     TABLE_NAME = 'category'
     parser = reqparse.RequestParser()
@@ -18,23 +19,23 @@ class Category(Resource):
                         required=True,
                         help='Monthly budgeted amount')
 
-    def get(self, categoryId):
-        cat = CategoryModel.find_by_id(categoryId)
+    def get(self, category_id):
+        cat = CategoryModel.find_by_id(category_id)
         if not cat:
             return CATEGORY_NOT_FOUND, 404
         else:
             return cat.json()
 
     @jwt_required()
-    def put(self, categoryId):
+    def put(self, category_id):
         data = Category.parser.parse_args()
 
-        cat = CategoryModel.find_by_id(categoryId)
+        cat = CategoryModel.find_by_id(category_id)
         if not cat:
             return CATEGORY_NOT_FOUND, 404
 
         category = CategoryModel(data['name'], data['monthlyBudget'])
-        category.id = categoryId
+        category.id = category_id
 
         try:
             category.update()
@@ -44,11 +45,12 @@ class Category(Resource):
         return category.json()
 
     @jwt_required()
-    def delete(self, categoryId):
-        cat = CategoryModel.find_by_id(categoryId)
+    def delete(self, category_id):
+        cat = CategoryModel.find_by_id(category_id)
         if not cat:
             return CATEGORY_NOT_FOUND, 404
         cat.delete_from_db()
+
 
 class CategoryList(Resource):
     def get(self):

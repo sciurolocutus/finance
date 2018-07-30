@@ -1,6 +1,5 @@
-from sqlalchemy.orm import relationship
-
 from db import db
+
 
 class CategoryModel(db.Model):
     __tablename__ = 'category'
@@ -23,9 +22,7 @@ class CategoryModel(db.Model):
 
     @classmethod
     def find_all(cls):
-        resp = cls.query.all()
-        return resp
-        #return cls.query.all()
+        return cls.query.all()
 
     def update(self):
         db.session.query(CategoryModel).filter(CategoryModel.id==self.id).update({'name': self.name, 'monthlyBudget': self.monthlyBudget})
